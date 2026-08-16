@@ -363,6 +363,11 @@
   .err-msg{ font-size:12px; color:#E23B3B; margin-top:6px; display:none; }
   .field.err .err-msg{ display:block; }
   .form-note{ font-size:12px; color:var(--text-dim); margin-top:14px; }
+  .form-error-general{
+    display:none; font-size:13px; color:#E23B3B; margin-top:14px; text-align:center;
+  }
+  .form-error-general.show{ display:block; }
+  #submitBtn:disabled{ opacity:.6; cursor:not-allowed; }
   .form-success{
     display:none; text-align:center; padding:30px 10px;
   }
@@ -717,7 +722,9 @@
         </div>
       </div>
       <div class="card-form">
-        <form id="leadForm" novalidate>
+        <form id="leadForm" novalidate action="https://formspree.io/f/mnpabebw" method="POST">
+          <input type="hidden" name="_subject" value="Заявка с hcw12c.ru — Haier HCW12C">
+          <input type="hidden" name="_replyto" value="umelez1@bk.ru">
           <div class="field" data-field="name">
             <label>Имя <span class="req">*</span></label>
             <input type="text" name="name" placeholder="Как к вам обращаться">
@@ -736,7 +743,8 @@
             <label>Комментарий</label>
             <textarea name="comment" placeholder="Например: нужна 1 машина для прачечной, интересует установка в колонну с сушкой"></textarea>
           </div>
-          <button type="submit" class="btn btn-primary btn-block">Получить коммерческое предложение</button>
+          <button type="submit" class="btn btn-primary btn-block" id="submitBtn">Получить коммерческое предложение</button>
+          <div class="form-error-general" id="formErrorGeneral">Не удалось отправить заявку. Попробуйте ещё раз или напишите на umelez1@bk.ru</div>
         </form>
         <div class="form-success" id="formSuccess">
           <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6"/><path d="m8 12.5 2.5 2.5L16 9.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -840,11 +848,15 @@
     });
   });
 
-  // Form validation (client-side demo — wire up to real backend/CRM before publishing)
+  // Form validation + submission to Formspree (email service)
   var form = document.getElementById('leadForm');
   var success = document.getElementById('formSuccess');
+  var submitBtn = document.getElementById('submitBtn');
+  var errorBox = document.getElementById('formErrorGeneral');
+
   form.addEventListener('submit', function(e){
     e.preventDefault();
+    errorBox.classList.remove('show');
     var valid = true;
 
     var nameField = form.querySelector('[name="name"]');
@@ -856,12 +868,32 @@
     var phoneDigits = phoneField.value.replace(/\D/g,'');
     if(phoneDigits.length < 10){ phoneWrap.classList.add('err'); valid = false; } else { phoneWrap.classList.remove('err'); }
 
-    if(valid){
-      form.style.display = 'none';
-      success.classList.add('show');
-    }
+    if(!valid) return;
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Отправляем…';
+
+    fetch(form.action, {
+      method: 'POST',
+      body: new FormData(form),
+      headers: { 'Accept': 'application/json' }
+    })
+    .then(function(response){
+      if(response.ok){
+        form.style.display = 'none';
+        success.classList.add('show');
+      } else {
+        throw new Error('Submit failed');
+      }
+    })
+    .catch(function(){
+      errorBox.classList.add('show');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Получить коммерческое предложение';
+    });
   });
 </script>
+
 
 </body>
 </html>
